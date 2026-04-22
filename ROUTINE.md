@@ -31,16 +31,34 @@ Follow these steps in order. Do not skip. Report progress as you go.
 ### Step 1 — Sanity check
 
 Verify the four required env vars (`COLLECTOR_URL`, `COLLECTOR_AUTH_TOKEN`,
-`HINDSIGHT_URL`, `HINDSIGHT_AUTH_TOKEN`) are set. Verify both services are
-reachable:
+`HINDSIGHT_URL`, `HINDSIGHT_AUTH_TOKEN`) are set and both services are
+reachable. Use a **single Bash call** with proper `set -e` semantics — do NOT
+chain `[ ... ] && echo ... && exit 1` because that pattern silently exits the
+whole script when the var IS set. Use a clean if/else or for-loop instead:
 
 ```bash
-curl -sS -o /dev/null -w "%{http_code}" "$COLLECTOR_URL/health"
-curl -sS -o /dev/null -w "%{http_code}" "$HINDSIGHT_URL/health" \
-  -H "User-Agent: $USER_AGENT"
+set -euo pipefail
+
+# All 4 required vars must be set
+for v in COLLECTOR_URL COLLECTOR_AUTH_TOKEN HINDSIGHT_URL HINDSIGHT_AUTH_TOKEN; do
+  if [ -z "${!v:-}" ]; then
+    echo "MISSING required env var: $v" >&2
+    exit 1
+  fi
+done
+
+# Both services must return 200. `-f` makes curl exit non-zero on 4xx/5xx
+# so `set -e` trips on failure — no manual status-code checking needed.
+curl -sSfL -o /dev/null -H "User-Agent: ${USER_AGENT:-aig-hindsight-routine/0.1.0}" "$COLLECTOR_URL/health"
+curl -sSfL -o /dev/null -H "User-Agent: ${USER_AGENT:-aig-hindsight-routine/0.1.0}" "$HINDSIGHT_URL/health"
+
+echo "OK: env + reachability"
 ```
 
-Both must return `200`. If not, stop and report.
+Note: env vars come from the environment config attached to this routine
+(set once on the custom cloud environment), so `source /tmp/routine-env.sh`
+is NOT needed unless the environment is misconfigured. The prompt's Step 0
+file-write is redundant when env config is in place — skip it.
 
 ### Step 2 — List unprocessed transcripts
 
