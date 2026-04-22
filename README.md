@@ -26,7 +26,7 @@
 > with `--max-turns 10` processes every chunk reliably.
 >
 > **The cloud routine corresponding to this repo is paused** at
-> https://claude.ai/code/routines/trig_016sM1Co11keMFgWJdNjRahA. The repo
+> https://claude.ai/code/routines/trig_01MaReYX6ZFCdryME7qTcgVW. The repo
 > is kept as a reference example of how Claude Code routines are wired up
 > with env config, custom cloud environments, and the bash-driven
 > orchestration pattern — useful if you ever need to stand up a different
