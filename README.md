@@ -1,5 +1,39 @@
 # hindsight-routine
 
+> ## ⚠️ DEPRECATED — superseded 2026-04-22
+>
+> **This repo is no longer the extraction path the team uses.** Extraction
+> moved to a cron job on devcortex that invokes `claude -p --json-schema`
+> directly, giving us grammar-constrained JSON output that the Task-tool
+> subagents here cannot produce. See
+> [`aig-devkit/hindsight-extractor/`](https://github.com/ai-genius-automations/aig-devkit/tree/main/hindsight-extractor)
+> for the active pipeline.
+>
+> **Why we moved:**
+> - Task subagents spawned by this routine cannot declare a structured-output
+>   contract ([claude-code#20625](https://github.com/anthropics/claude-code/issues/20625)).
+>   Extraction quality was bottlenecked on prompt-engineered JSON compliance,
+>   which failed ~33% of the time in production (chunks returning prose or
+>   off-schema fields got silently dropped).
+> - The cloud runtime's 15-run/day cap on Max plans was a ceiling we'd bump
+>   into if session volume grew; devcortex cron has no such limit.
+> - Passing full 1.3 MB transcripts through a single `Task` subagent silently
+>   truncated beyond Haiku's 200k window — the motivating bug was a session
+>   that should have produced ~40 facts producing only 9.
+>
+> The new extractor solves all three: `--json-schema` gives 100% schema
+> compliance, cron has no run cap, and explicit message-boundary chunking
+> with `--max-turns 10` processes every chunk reliably.
+>
+> **The cloud routine corresponding to this repo is paused** at
+> https://claude.ai/code/routines/trig_016sM1Co11keMFgWJdNjRahA. The repo
+> is kept as a reference example of how Claude Code routines are wired up
+> with env config, custom cloud environments, and the bash-driven
+> orchestration pattern — useful if you ever need to stand up a different
+> cloud-runtime routine.
+
+---
+
 Nightly/hourly Claude Code routine that extracts facts from Claude Code
 session transcripts (collected by [`hindsight-collector`](https://github.com/ai-genius-automations/hindsight-collector))
 and writes them to hindsight via the team's [direct-insert endpoint](https://github.com/ai-genius-automations/hindsight/tree/aig/direct-insert).
