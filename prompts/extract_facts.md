@@ -1,78 +1,40 @@
-# Extraction subagent prompt
+# Hindsight fact extraction
 
-The routine passes you a single Claude Code session transcript (formatted as
-JSON: a list of `{role, content: [blocks…]}`). Your job is to extract the
-**significant long-term facts** worth remembering for future sessions. The
-facts will be stored in a team-shared memory (hindsight) and recalled by
-other agents in future conversations.
+You are given a Claude Code session transcript (JSON list of `{role, content: [blocks...]}` messages). Your job is to extract the **significant long-term facts** worth remembering for future sessions in a team-shared memory system.
 
-## Output — return ONLY this JSON, nothing else
-
-```json
-{
-  "facts": [
-    {
-      "fact_text": "One complete sentence (1-2 sentences max). Self-contained.",
-      "fact_type": "world" | "assistant",
-      "where": "location string, or null",
-      "occurred_start": "2026-04-22T02:00:00Z" or null,
-      "occurred_end": null,
-      "entities": [
-        {"name": "specific proper noun or identifier", "type": "PERSON"}
-      ],
-      "tags": ["optional tag", ...]
-    }
-  ]
-}
-```
-
-**Schema rules:**
-- `fact_text` — required, non-empty. A single short statement. Must stand alone
-  without the surrounding context.
-- `fact_type` — required. `"world"` for objective/external facts ("X is
-  located at Y", "the deadline is Friday"). `"assistant"` for first-person
-  actions, experiences, or observations by the speaker ("I fixed X",
-  "we decided Y").
-- `where` — optional. Physical or logical location.
-- `occurred_start` / `occurred_end` — ISO 8601 UTC timestamps for time-bounded
-  events. Null if not applicable.
-- `entities` — list of named entities mentioned in the fact. Use `type`:
-  `PERSON`, `PROJECT`, `COMPANY`, `CONCEPT`, `LOCATION`, `TECHNOLOGY`,
-  `SERVICE`, `FILE`, `URL`. Default `CONCEPT`.
-- `tags` — optional short labels (lowercase, hyphenated). E.g. `["preferences"]`,
-  `["deploy"]`, `["bug"]`. Use sparingly.
-
-**Return the JSON object ONLY.** No prose before or after. No markdown fence.
-Just `{ "facts": [ ... ] }`.
+The output schema is enforced by the runtime — you cannot produce invalid JSON. Focus on *which* facts to extract, not on formatting.
 
 ## What to extract
 
 **DO extract:**
-- Durable rules/preferences: "User never uses sed/awk on remote servers", "the
-  team prefers tabs", "always run npm test before pushing".
-- Architectural/design decisions with stated reasons: "we use Postgres schema
-  X because Y", "retain was disabled because Z".
-- Factual events that matter later: "reboot test passed", "container Y was
-  deployed", "API key was rotated".
-- Relationships: "highcall-test VM (192.168.1.70) runs Fastify + Supabase".
-- User intent or priorities: "user wants to ship the collector this week",
-  "feature X is blocked until Y".
+- Durable rules/preferences: "User never uses sed/awk on remote servers", "team prefers tabs over spaces", "always run npm test before pushing".
+- Architectural/design decisions with stated reasons: "we use Postgres schema X because Y", "retain was disabled because it was burning OpenAI budget without being used".
+- Factual events that matter later: "reboot test passed", "container Y was deployed to production on 2026-04-21", "API key was rotated".
+- Relationships between entities: "highcall-test VM (192.168.1.70) runs Fastify + Supabase", "devcortex hosts hindsight-collector on port 8889".
+- User intent or priorities: "user wants to ship the collector this week", "feature X is blocked until Y lands".
 
 **DO NOT extract:**
-- Transient state: "I just ran `ls`", "file has 5 lines".
-- Tool-call noise: the fact that a grep happened, or a command was typed.
-- Content that's obvious from the project structure or code itself.
-- Anything the session undid or contradicted later — extract the final state,
-  not the failed attempt.
-- Duplicate facts — pick the best single phrasing.
+- Transient state: "I just ran `ls`", "file has 5 lines", "grep returned no results".
+- Tool-call noise: the fact that a grep or read happened.
+- Content that's obvious from the project structure, code, or git history.
+- Anything the session undid or contradicted later — extract the **final** state, not failed attempts.
+- Near-duplicate facts — pick the best single phrasing.
+
+## Per-field guidance
+
+- `fact_text`: one complete self-contained sentence. Must stand alone without the surrounding transcript.
+- `fact_type`:
+  - `"world"` — objective/external truths, states, decisions, relationships.
+  - `"assistant"` — first-person actions, experiences, observations ("I fixed X", "we decided Y").
+- `where`: location string (file path, host, URL, room) or null.
+- `occurred_start` / `occurred_end`: ISO-8601 UTC for time-bounded events; null otherwise. If only a date is known, use `YYYY-MM-DDT00:00:00Z`.
+- `entities`: named entities referenced in the fact. Prefer proper nouns and specific identifiers over generic terms.
+- `tags`: short lowercase-hyphenated labels (`["preferences"]`, `["deploy"]`, `["bug"]`). Use sparingly — 0-3 per fact.
 
 ## Quality bar
 
-Err toward fewer, higher-quality facts. It is better to extract 5 facts that
-will still be useful a month from now than 30 noisy facts. Each fact should
-answer the question: "would a teammate starting a session tomorrow benefit
-from knowing this?"
+**Err toward fewer, higher-quality facts.** Five facts that will still be useful a month from now beats thirty noisy ones. Each fact should answer: *would a teammate starting a session tomorrow benefit from knowing this?*
 
 ## Transcript
 
-{TRANSCRIPT_BLOB}
+Below is the (possibly partial / chunked) transcript to extract from. Session boundaries may be mid-conversation — extract what you can from this slice.
