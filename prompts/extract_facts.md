@@ -19,6 +19,24 @@ The output schema is enforced by the runtime — you cannot produce invalid JSON
 - Content that's obvious from the project structure, code, or git history.
 - Anything the session undid or contradicted later — extract the **final** state, not failed attempts.
 - Near-duplicate facts — pick the best single phrasing.
+- **Harness and session mechanics.** The launcher, not the user, produces these,
+  and they describe how the session was started rather than anything learned in
+  it. They also poison recall: a fact like "user told the assistant to read
+  <path>" is the closest match for the next launcher prompt, so these compound.
+  Specifically, never extract:
+  - Task-assignment boilerplate: "user assigned the assistant as sole owner of
+    this feature/bugfix", "user instructed the assistant to read <file>",
+    "call the completion URL when finished".
+  - Session bookkeeping: session ids, message counts, transcript sizes, flush
+    or retain flags, "Session metadata: ...".
+  - Process/PID observations: what was in `ps`, which flags a `claude` process
+    was launched with, tmux session inventories.
+  - The mere existence or path of a per-session context file.
+
+  Do still extract durable facts that happen to mention such paths — e.g.
+  "project X uses the octoally-pro session system, with context files under
+  .octoally-pro/sessions/" is real architecture worth keeping. The test is
+  whether the fact outlives the session that produced it.
 
 ## Per-field guidance
 
