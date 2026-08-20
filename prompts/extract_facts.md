@@ -32,6 +32,10 @@ The output schema is enforced by the runtime — you cannot produce invalid JSON
   - Process/PID observations: what was in `ps`, which flags a `claude` process
     was launched with, tmux session inventories.
   - The mere existence or path of a per-session context file.
+  - Agent-tooling bookkeeping: task-status changes ("set task #3 to
+    completed via TaskUpdate"), tool_use_ids, "the tool returned
+    confirmation", or the fact that a tool produced a result. The *outcome*
+    may be worth a fact; the tool mechanics never are.
 
   Do still extract durable facts that happen to mention such paths — e.g.
   "project X uses the octoally-pro session system, with context files under
