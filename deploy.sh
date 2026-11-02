@@ -35,10 +35,13 @@ if ssh "$REMOTE_HOST" "sudo test -f ${REMOTE_PATH}"; then
     echo "  It was probably edited by hand on ${REMOTE_HOST}. Diff (server → local):"
     diff -u --label "server:${REMOTE_PATH}" --label "local:prompts/extract_facts.md" "$remote_copy" "$SRC" || true
     if [ "${FORCE:-0}" != 1 ]; then
-      read -r -p "Overwrite the server copy and lose these edits? [y/N] " answer < /dev/tty \
+      read -r -p "Overwrite the server copy (a backup is kept on the server)? [y/N] " answer < /dev/tty \
         || { echo "No terminal to confirm; re-run with FORCE=1 to overwrite."; exit 1; }
       [[ "$answer" =~ ^[Yy]$ ]] || { echo "Aborted; server copy left unchanged."; exit 1; }
     fi
+    backup="${REMOTE_PATH}.hand-edit-$(date -u +%Y%m%dT%H%M%SZ)"
+    ssh "$REMOTE_HOST" "sudo cp -p ${REMOTE_PATH} ${backup}"
+    echo "→ Backed up the hand-edited copy to ${REMOTE_HOST}:${backup}"
   fi
 fi
 

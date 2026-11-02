@@ -37,7 +37,9 @@ copy has drifted from this repo before because it was edited in place. Before
 uploading, `./deploy.sh` checks that the server copy matches the local file or
 a committed version of the prompt. If it doesn't, the script shows the diff and
 asks before overwriting (`FORCE=1` skips the question; with no terminal to ask
-on, it stops). Committing before you deploy keeps that check from flagging your
+on, it stops). When it does overwrite, it first saves the hand-edited copy on
+the server as `/srv/hindsight-extractor/prompt.md.hand-edit-<UTC timestamp>`.
+Committing before you deploy keeps that check from flagging your
 own earlier deploys.
 
 ## Retired: the cloud routine
