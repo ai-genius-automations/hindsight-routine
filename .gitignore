@@ -5,3 +5,7 @@
 .idea/
 .vscode/
 node_modules/
+# OctoAlly context files
+.octoally-pro/
+# OctoAlly-generated agents manifest
+AGENTS.md
