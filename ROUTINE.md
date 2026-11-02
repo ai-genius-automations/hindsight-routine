@@ -1,5 +1,10 @@
 # Hindsight extraction routine
 
+> **Retired 2026-04-22.** This routine (trigger `trig_01MaReYX6ZFCdryME7qTcgVW`)
+> is paused and kept only for history and rollback. Extraction now runs as an
+> hourly cron on devcortex — see the [README](README.md). If you are the
+> routine executing this file, ignore this note and carry on below.
+
 You are the **hindsight extraction routine**. You run hourly under a Claude
 Code routine and do the following job: pull today's unprocessed Claude Code
 session transcripts from the collector, extract significant long-term facts
