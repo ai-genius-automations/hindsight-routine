@@ -1,15 +1,51 @@
 # hindsight-routine
 
-> ## ⚠️ DEPRECATED — superseded 2026-04-22
+**What's live here and what isn't:**
+
+| Part | Status |
+|---|---|
+| [`prompts/extract_facts.md`](prompts/extract_facts.md) + [`deploy.sh`](deploy.sh) | ✅ **Active and canonical.** This repo is the only source of the Hindsight fact-extraction prompt. |
+| The cloud routine ([`ROUTINE.md`](ROUTINE.md), trigger `trig_01MaReYX6ZFCdryME7qTcgVW`) | 🛑 **Retired 2026-04-22.** Kept only for history and rollback. |
+
+## Active: the extraction prompt
+
+Hindsight fact extraction now runs as an hourly cron on devcortex
+(`/srv/hindsight-extractor/run.sh`), which calls `claude -p --json-schema`
+directly. The extractor itself lives in aig-devkit — see
+[`aig-devkit/hindsight/ARCHITECTURE.md`](https://github.com/ai-genius-automations/aig-devkit/blob/main/hindsight/ARCHITECTURE.md)
+for how the pieces fit together and
+[`aig-devkit/hindsight-extractor/`](https://github.com/ai-genius-automations/aig-devkit/tree/main/hindsight-extractor)
+for the cron script, schema and installer.
+
+The prompt that extractor uses is **this repo's**
+[`prompts/extract_facts.md`](prompts/extract_facts.md), deployed to
+`devcortex:/srv/hindsight-extractor/prompt.md`. aig-devkit does not carry a
+copy; its `install.sh` only warns and points here if the prompt is missing on
+the server.
+
+### Update the extraction prompt
+
+1. Edit [`prompts/extract_facts.md`](prompts/extract_facts.md) in this repo.
+2. Run `./deploy.sh`. It copies the file to
+   `devcortex:/srv/hindsight-extractor/prompt.md` and checks the sha256 of the
+   deployed copy against the local file (override the host with
+   `REMOTE_HOST=...`).
+3. Commit the change so the repo and the server stay the same file.
+
+**Never edit `/srv/hindsight-extractor/prompt.md` on the box.** The deployed
+copy has drifted from this repo before because it was edited in place; the
+next `./deploy.sh` would silently overwrite those edits.
+
+## Retired: the cloud routine
+
+> **Everything below this point documents the retired cloud routine.** It is
+> kept for history and as a rollback path, not as the current pipeline. The
+> routine is paused at
+> https://claude.ai/code/routines/trig_01MaReYX6ZFCdryME7qTcgVW. It is also a
+> reference example of how Claude Code routines are wired up with env config,
+> custom cloud environments, and the bash-driven orchestration pattern.
 >
-> **This repo is no longer the extraction path the team uses.** Extraction
-> moved to a cron job on devcortex that invokes `claude -p --json-schema`
-> directly, giving us grammar-constrained JSON output that the Task-tool
-> subagents here cannot produce. See
-> [`aig-devkit/hindsight-extractor/`](https://github.com/ai-genius-automations/aig-devkit/tree/main/hindsight-extractor)
-> for the active pipeline.
->
-> **Why we moved:**
+> **Why we moved to the devcortex cron:**
 > - Task subagents spawned by this routine cannot declare a structured-output
 >   contract ([claude-code#20625](https://github.com/anthropics/claude-code/issues/20625)).
 >   Extraction quality was bottlenecked on prompt-engineered JSON compliance,
@@ -24,13 +60,6 @@
 > The new extractor solves all three: `--json-schema` gives 100% schema
 > compliance, cron has no run cap, and explicit message-boundary chunking
 > with `--max-turns 10` processes every chunk reliably.
->
-> **The cloud routine corresponding to this repo is paused** at
-> https://claude.ai/code/routines/trig_01MaReYX6ZFCdryME7qTcgVW. The repo
-> is kept as a reference example of how Claude Code routines are wired up
-> with env config, custom cloud environments, and the bash-driven
-> orchestration pattern — useful if you ever need to stand up a different
-> cloud-runtime routine.
 
 ---
 
